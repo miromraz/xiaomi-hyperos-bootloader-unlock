@@ -1,0 +1,100 @@
+name: Help / Troubleshooting
+description: Stuck during the unlock procedure? Post your error and setup details here
+title: "[HELP] "
+labels: ["help", "troubleshooting"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Stuck or getting errors? Fill in the details below and we'll help troubleshoot.
+        Please include as much info as possible — the more context, the faster we can help.
+  - type: input
+    id: device
+    attributes:
+      label: Device model
+      description: "Full model name (e.g. Redmi Note 11S)"
+      placeholder: "Redmi Note 11S"
+    validations:
+      required: true
+  - type: input
+    id: codename
+    attributes:
+      label: Codename
+      description: "Device codename (e.g. miel, fleur, camellia)"
+      placeholder: "miel"
+    validations:
+      required: false
+  - type: input
+    id: soc
+    attributes:
+      label: SoC
+      description: "MediaTek SoC (e.g. MT6781, MT6833)"
+      placeholder: "MT6781"
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Firmware version
+      description: "Full firmware string (e.g. HyperOS OS1.0.9.0.TKEEUXM)"
+      placeholder: "HyperOS OS1.0.9.0.TKEEUXM"
+    validations:
+      required: true
+  - type: dropdown
+    id: step_failed
+    attributes:
+      label: Which step failed?
+      options:
+        - "Step 1 — RPMB backup (da rpmb r)"
+        - "Step 2 — RPMB erase (da rpmb e)"
+        - "Step 3 — seccfg unlock (da seccfg unlock)"
+        - "Entering BROM mode"
+        - "Verification (fastboot oem lks)"
+        - "After reboot — device issue"
+        - "Other"
+    validations:
+      required: true
+  - type: textarea
+    id: error_output
+    attributes:
+      label: Full terminal output
+      description: "Copy-paste the FULL terminal output including the error. Redact sensitive info (ME_ID, SOC_ID) if you want."
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      description: "Your PC OS (e.g. Ubuntu 24.04, Windows 11, macOS 15)"
+      placeholder: "Ubuntu 24.04"
+    validations:
+      required: true
+  - type: dropdown
+    id: usb_port
+    attributes:
+      label: USB port type
+      options:
+        - "USB 2.0 (black port)"
+        - "USB 3.0/3.1 (blue port)"
+        - "USB-C"
+        - "USB hub"
+        - "Not sure"
+    validations:
+      required: true
+  - type: dropdown
+    id: preloader
+    attributes:
+      label: Did you use a preloader file?
+      options:
+        - "No — let mtkclient auto-detect"
+        - "Yes — specified with --preloader"
+    validations:
+      required: true
+  - type: textarea
+    id: what_tried
+    attributes:
+      label: What have you already tried?
+      description: "List any troubleshooting steps you've already attempted"
+    validations:
+      required: false

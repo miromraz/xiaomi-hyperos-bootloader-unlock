@@ -1,6 +1,6 @@
 # Xiaomi MTK Bootloader Unlock — HyperOS/MIUI14+ RPMB Bypass
 
-**Tested on:** POCO M4 Pro 4G (fleur, MT6781) | **Status:** Phase 3 — Full method released  
+**Affects:** All Xiaomi MTK devices with HyperOS/MIUI14+ and Kamakiri BROM access  
 **XDA Thread:** [xdaforums.com/t/4784527](https://xdaforums.com/t/4784527/)  
 **Author:** [Jz8root](https://github.com/Jz8Root)
 
