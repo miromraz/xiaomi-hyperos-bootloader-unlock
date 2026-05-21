@@ -51,10 +51,94 @@ ship different LK builds with different lock implementations.
 ### Prerequisites
 
 - [mtkclient](https://github.com/bkerler/mtkclient) with Kamakiri BROM exploit
-- Access to BROM mode (usually Vol+/Vol- while plugging USB — varies by device)
+- Access to BROM mode (see [Entering BROM Mode](#entering-brom-mode) below for the precise procedure)
 - Quality USB DATA cable (not charge-only)
 - **MANDATORY:** Full backup of NV partitions (commands below)
 
+
+### Linux Pre-flight
+
+On any modern Linux distro that ships with `ModemManager` and the `option` USB-serial driver
+(Manjaro, Arch, Ubuntu, Fedora, openSUSE, etc.), mtkclient sessions silently fail with
+`DaHandler - Please disconnect, start mtkclient and reconnect.` even though the udev rules
+from `Setup/Linux/` are installed correctly.
+
+The root cause is in `dmesg` immediately after the phone enters BROM:
+
+```
+usb 1-1: New USB device found, idVendor=0e8d, idProduct=0003
+usb 1-1: GSM modem (1-port) converter now attached to ttyUSB0
+```
+
+The kernel's `option` driver (via `usb_wwan`/`usbserial`) claims the MediaTek port instantly on
+enumeration and blocks libusb's `CLAIM_INTERFACE`. ModemManager grabs anything that looks like a
+modem. mtkclient's udev rules grant userspace access but don't prevent kernel-driver binding.
+
+**Run this before each mtkclient BROM session:**
+
+```bash
+sudo systemctl stop ModemManager
+sudo modprobe -r option usb_wwan
+
+# verify
+lsmod | grep -E '^option|^usb_wwan' || echo "ok — modules unloaded"
+systemctl is-active ModemManager   # should print: inactive
+```
+
+`usbserial` is built into the kernel on most distros — you don't need to (and can't) unload it.
+Only `option` and `usb_wwan` matter.
+
+The modules can auto-reload on udev events between sessions. If a later command fails with the
+same `Please disconnect, start mtkclient and reconnect.` symptom, re-run the `modprobe -r` step.
+
+When you're done with the unlock, restore the normal modem stack:
+
+```bash
+sudo systemctl start ModemManager
+# option/usb_wwan will re-load automatically on next USB modem connect, or after reboot
+```
+
+### Entering BROM Mode
+
+BROM is the boot-ROM USB-download mode that runs *before* the preloader. It only stays active if
+the volume keys are held during its ~100 ms startup window — and that window is **before USB power
+arrives**, not after. If you plug first and press keys after, BROM has already handed off to
+preloader → LK, and the keys then trigger fastboot or recovery instead.
+
+**The procedure that works reliably:**
+
+1. **Phone fully off.** Not transitioning. Not in fastboot. Not displaying a logo. If unsure,
+   hold Power for 15 s to force-off, then wait 5 s.
+2. **USB unplugged.**
+3. Press and hold **Vol+ AND Vol−** (both, simultaneously). On some devices Vol+ alone or
+   Vol− alone works; try both keys first.
+4. **While still holding the keys**, plug the USB cable in.
+5. Keep holding **for 15+ seconds** after the cable is in.
+6. Release.
+
+**The screen must stay completely black throughout.** If you see anything — Xiaomi logo,
+"FASTBOOT" text, the unlocked-warning screen, a vibration — the timing was wrong. Unplug,
+force-off, retry.
+
+> **mtkclient should already be running before you plug in.** Start `mtk.py r ...` /
+> `mtk.py da rpmb r ...` / `mtk.py da seccfg unlock` first — it will print
+> `Waiting for PreLoader VCOM, please reconnect mobile/iot device to brom mode` and sit there
+> until USB enumeration happens. That way mtkclient grabs the device in the first ~100 ms after
+> enumeration, before any kernel driver can race for the interface.
+
+**Between every `da` command, the phone needs a fresh BROM entry.** Unplug, force-off if needed,
+redo the key combo, replug.
+
+Stuck phone in some intermediate MTK state (e.g. `0e8d:20ff` not recognised by mtkclient, or
+fastboot wedged after a killed mtkclient run)? Two recovery paths:
+
+- Hold Power 15 s to force-off, redo BROM from step 1.
+- For a wedged USB endpoint without unplugging, reset the device node via ioctl:
+  ```bash
+  sudo python3 -c "import os, fcntl; fcntl.ioctl(os.open('/dev/bus/usb/BBB/DDD', os.O_WRONLY), 21780, 0)"
+  ```
+  (replace `BBB/DDD` with the bus/device numbers from `lsusb`).
+  
 ### Step 0 — Mandatory backups
 
 In BROM, dump everything that matters before any write operation:
